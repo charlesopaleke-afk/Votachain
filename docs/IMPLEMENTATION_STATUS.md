@@ -48,3 +48,5 @@ This is an initial administrative API foundation. Candidate and voter management
 - The dashboard can create an organization through the existing organization endpoint when the signed-in user has none.
 
 This is an API-connected UI implementation, not a tested deployment. It still requires configured PostgreSQL, Prisma client generation/migrations, email/OTP configuration for sign-in, and a successful build/runtime test. The dashboard's secondary navigation destinations (voters, candidates, audit log) are placeholders; those modules are not implemented yet.
+
+- Added an email OTP sign-in screen at `/login`, wired to the existing OTP request and verification endpoints. Successful verification redirects to the connected dashboard.
