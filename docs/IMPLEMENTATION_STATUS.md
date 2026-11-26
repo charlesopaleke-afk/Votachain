@@ -59,4 +59,5 @@ This is an API-connected UI implementation, not a tested deployment. It still re
 - Voter removal is blocked after an election opens; adding voters is blocked for closed elections.
 - Added a connected voter register page at `/voters` with organization/election selection, registration, removal and empty/loading/error states.
 - Added election-scoped candidate endpoints: list, add and remove, with organization membership/role checks and audit events. Candidate changes are blocked after an election opens.
-- CSV import, voter invitation/OTP eligibility flow, candidate UI, pagination, and automated integration tests remain outstanding. These APIs have not yet been run against a configured database or production build.
+- Added a connected candidate management page at `/candidates` with organization/election selection, candidate registration, optional profile/manifesto summary, removal, locked-state handling for open/closed elections, and loading/error/empty states.
+- CSV import, voter invitation/OTP eligibility flow, pagination, and automated integration tests remain outstanding. These APIs and pages have not yet been run against a configured database or production build.
