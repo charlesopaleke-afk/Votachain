@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: message === "UNAUTHENTICATED" ? "Authentication required." : "Election management permission required." }, { status: message === "UNAUTHENTICATED" ? 401 : 403 });
   }
 
-  const data: { title?: string; description?: string | null; startsAt?: Date | null; endsAt?: Date | null; status?: string } = {};
+  if (existing.status === "closed" && (body.title !== undefined || body.description !== undefined || body.startsAt !== undefined || body.endsAt !== undefined)) return NextResponse.json({ error: "Closed elections cannot be edited." }, { status: 409 });\n\n  const data: { title?: string; description?: string | null; startsAt?: Date | null; endsAt?: Date | null; status?: string } = {};
   if (body.title !== undefined) {
     if (typeof body.title !== "string" || body.title.trim().length < 3 || body.title.trim().length > 160) return NextResponse.json({ error: "Title must be 3–160 characters." }, { status: 400 });
     data.title = body.title.trim();
