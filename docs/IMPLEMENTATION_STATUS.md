@@ -50,3 +50,13 @@ This is an initial administrative API foundation. Candidate and voter management
 This is an API-connected UI implementation, not a tested deployment. It still requires configured PostgreSQL, Prisma client generation/migrations, email/OTP configuration for sign-in, and a successful build/runtime test. The dashboard's secondary navigation destinations (voters, candidates, audit log) are placeholders; those modules are not implemented yet.
 
 - Added an email OTP sign-in screen at `/login`, wired to the existing OTP request and verification endpoints. Successful verification redirects to the connected dashboard.
+
+## Voter and candidate administration
+
+- Added election-scoped voter endpoints: list, add and remove.
+- Voter email addresses are trimmed and normalized to lowercase; malformed addresses are rejected and the database's election/email unique constraint prevents duplicate registrations.
+- Voter mutations require owner, admin or election_manager membership and are recorded in the organization audit trail.
+- Voter removal is blocked after an election opens; adding voters is blocked for closed elections.
+- Added a connected voter register page at `/voters` with organization/election selection, registration, removal and empty/loading/error states.
+- Added election-scoped candidate endpoints: list, add and remove, with organization membership/role checks and audit events. Candidate changes are blocked after an election opens.
+- CSV import, voter invitation/OTP eligibility flow, candidate UI, pagination, and automated integration tests remain outstanding. These APIs have not yet been run against a configured database or production build.
