@@ -25,3 +25,14 @@ Run `npx prisma generate` and `npx prisma db push` for a development database, o
 - Configure provider-level sending limits and abuse detection.
 - Add organization invite/role-management workflows and tests.
 - This is identity and tenant scaffolding only. It is not an implementation of an election, secret ballot, verifiable tally, or legally certified voting system.
+
+
+## Election management module
+
+- `GET /api/elections?organizationId=...` lists elections for an organization after verifying membership.
+- `POST /api/elections` creates a draft election for an organization; restricted to owner, admin, or election_manager membership roles.
+- `PATCH /api/elections` updates election metadata/dates and advances the draft → scheduled → open → closed lifecycle with server-side transition checks.
+- Election creation and updates write organization-scoped audit events in the same database transaction.
+- Election records now include an `updatedAt` timestamp and an organization/status/start-date index.
+
+This is an initial administrative API foundation. Candidate and voter management, bulk import, automatic lifecycle scheduling, concurrency/race-condition tests, and the actual ballot protocol are not yet implemented. Run Prisma generation and database migration/push, then add automated tests before treating these endpoints as deployable.
