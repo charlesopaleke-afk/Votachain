@@ -1,0 +1,11 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+model Organization { id String @id @default(cuid()) name String slug String @unique createdAt DateTime @default(now()) members Membership[] elections Election[] }
+model Membership { id String @id @default(cuid()) organizationId String userId String role String createdAt DateTime @default(now()) organization Organization @relation(fields:[organizationId],references:[id]) @@unique([organizationId,userId]) }
+model User { id String @id @default(cuid()) email String @unique createdAt DateTime @default(now()) memberships Membership[] }
+model Election { id String @id @default(cuid()) organizationId String title String description String? status String @default("draft") startsAt DateTime? endsAt DateTime? createdAt DateTime @default(now()) organization Organization @relation(fields:[organizationId],references:[id]) candidates Candidate[] voters Voter[] ballots Ballot[] }
+model Candidate { id String @id @default(cuid()) electionId String name String details String? election Election @relation(fields:[electionId],references:[id]) }
+model Voter { id String @id @default(cuid()) electionId String email String election Election @relation(fields:[electionId],references:[id]) @@unique([electionId,email]) }
+model OTPChallenge { id String @id @default(cuid()) email String codeHash String expiresAt DateTime consumedAt DateTime? createdAt DateTime @default(now()) }
+model Ballot { id String @id @default(cuid()) electionId String nullifier String encryptedPayload String anchorTxHash String? createdAt DateTime @default(now()) election Election @relation(fields:[electionId],references:[id]) @@unique([electionId,nullifier]) }
+model AuditEvent { id String @id @default(cuid()) organizationId String? action String details Json? createdAt DateTime @default(now()) }
