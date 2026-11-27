@@ -442,6 +442,13 @@ export default {
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     try {
       if (!["GET", "HEAD"].includes(request.method)) assertSameOrigin(request);
+      if (url.pathname === "/api/auth/session") {
+        if (request.method === "GET") return json({ user: await readSession(request, env) });
+        if (request.method === "DELETE") {
+          return json({ ok: true }, 200, { "Set-Cookie": clearSessionCookie(request) });
+        }
+        return error("Method not allowed.", 405);
+      }
       if (url.pathname === "/api/health") {
         const connectionString = env.HYPERDRIVE?.connectionString || env.DATABASE_URL;
         if (!connectionString) return json({ ok: false, database: "not_configured" }, 503);
