@@ -254,6 +254,7 @@ async function elections(request, sql, session, url) {
         changedFields.push("endsAt");
       }
       if (nextStartsAt && nextEndsAt && new Date(nextStartsAt) >= new Date(nextEndsAt)) return { response: error("The end must be after the start.") };
+      if (["scheduled", "open"].includes(status) && !nextStartsAt) return { response: error("Set a start date before scheduling or opening.") };
 
       if (body.status !== undefined) {
         const valid = ["draft", "scheduled", "open", "closed"];
@@ -261,6 +262,7 @@ async function elections(request, sql, session, url) {
         if (!valid.includes(body.status)) return { response: error("Status must be draft, scheduled, open or closed.") };
         if (!allowed[existing.status]?.includes(body.status)) return { response: error("That election status transition is not allowed.", 409) };
         if (body.status === "scheduled" && !nextStartsAt) return { response: error("Set a start date before scheduling.") };
+        if (body.status === "open" && nextStartsAt && new Date(nextStartsAt) > new Date()) return { response: error("The election start date has not arrived.") };
         if (body.status === "open" && nextEndsAt && new Date(nextEndsAt) <= new Date()) return { response: error("The election end date has passed.") };
         status = body.status;
         changedFields.push("status");
@@ -357,7 +359,7 @@ async function voters(request, sql, session, url) {
     const election = found[0];
     if (!election) return error("Election not found.", 404);
     if (!await requireRole(sql, session, election.organizationId)) return error("Voter management permission required.", 403);
-    if (election.status === "closed") return error("Voters cannot be added to a closed election.", 409);
+    if (["open", "closed"].includes(election.status)) return error("Voter lists are locked once an election opens.", 409);
     const voterId = crypto.randomUUID();
     try {
       const voter = await sql.begin(async tx => {
