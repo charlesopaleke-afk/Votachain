@@ -61,3 +61,13 @@ This is an API-connected UI implementation, not a tested deployment. It still re
 - Added election-scoped candidate endpoints: list, add and remove, with organization membership/role checks and audit events. Candidate changes are blocked after an election opens.
 - Added a connected candidate management page at `/candidates` with organization/election selection, candidate registration, optional profile/manifesto summary, removal, locked-state handling for open/closed elections, and loading/error/empty states.
 - CSV import, voter invitation/OTP eligibility flow, pagination, and automated integration tests remain outstanding. These APIs and pages have not yet been run against a configured database or production build.
+
+## Bulk voter import
+- Added `POST /api/voters/import`: accepts batches of up to 500 emails, validates and normalizes addresses, de-duplicates the submitted list and existing records, inserts with duplicate-safe `createMany`, and records a batch audit event.
+- Added paste-based CSV import in the voter register UI, using the first column as email addresses, with status reporting and refresh after import.
+- Imports are blocked for open and closed elections. Database integration and build tests are still pending.
+
+## Cloudflare structure/deployment planning
+- Added `docs/CLOUDFLARE_DEPLOYMENT.md` describing route discovery/build watch-path policy and the OpenNext Workers adapter migration checklist.
+- Next.js nested `app/` directories are necessary route conventions and should not be flattened.
+- Cloudflare adapter configuration and runtime compatibility are not yet verified.
