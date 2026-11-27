@@ -89,12 +89,14 @@ npm run dev
 Open `http://localhost:3000`.
 
 ## Cloudflare deployment
-The intended target is **Cloudflare Workers with the OpenNext Cloudflare adapter** for Next.js. Adapter configuration, build, runtime and database compatibility have not yet been validated.
+The intended target is **Cloudflare Workers with the OpenNext Cloudflare adapter** for Next.js. OpenNext adapter configuration files and deployment scripts are now present. Adapter build, runtime and database compatibility remain unvalidated.
 
 - Keep the repository root as the application root.
 - Ensure build watch paths include the full repository (Cloudflare default include pattern `*`; avoid excluding route folders).
 - Do not flatten nested `app/` route folders.
 - Store secrets in Cloudflare environment/secret settings, not repository files.
+- Run `npm run preview` to build and preview using the Workers runtime.
+- Run `npm run deploy` only when ready to deploy; it deploys the built Worker.
 - Test a preview Worker and verify every page and API endpoint before production.
 
 See [Cloudflare deployment guide](docs/CLOUDFLARE_DEPLOYMENT.md).
