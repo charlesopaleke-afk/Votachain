@@ -1,21 +1,37 @@
-# Target Data Model
+# VotaChain Data Model
 
-The current Prisma schema is a starter scaffold, not the final model. Refine it after protocol and threat-model decisions.
+## Active PostgreSQL schema
 
-## Tenant and identity
-Organization; User; Membership; Invitation; Session (hashed/rotatable identifier, expiry, revocation); OTPChallenge (protected verifier, purpose, expiry, attempts, consumed time, delivery state).
+The deployed Worker uses the root-level `schema.sql` file. The active relational tables are:
 
-## Election configuration
-Election (tenant, type, state, timezone, schedule, policy version, frozen configuration hash); versioned BallotDefinition; Candidate/Option; ElectionApproval; append-only ElectionEvent.
+- `User`: verified email account.
+- `Organization`: tenant/workspace.
+- `Membership`: user-to-organization role relation.
+- `Election`: organization-scoped election metadata and lifecycle status.
+- `Candidate`: election candidate details.
+- `Voter`: election-scoped eligible voter email register.
+- `OTPChallenge`: HMAC-protected one-time sign-in challenge, expiry, attempt count and consume timestamp.
+- `Ballot`: placeholder only; it is not a working ballot protocol.
+- `AuditEvent`: organization-scoped administrative event and JSON details.
 
-## Eligibility
-VoterEligibility (election-scoped protected identity reference, import batch, status); ImportBatch (uploader, encrypted source, validation summary, retention); VotingAuthorization (protocol-defined short-lived authorization that cannot become a stable identity-to-ballot join key).
+Quoted PostgreSQL identifiers preserve the previous Prisma-generated table and camelCase column names so a database created from the earlier Prisma model can be checked for compatibility.
 
-## Ballot and tally
-BallotEnvelope (protocol-defined encrypted ballot only); election-scoped Nullifier; TallyRun (protocol/software version, input/output commitments, approvals); VerificationArtifact; ResultPublication.
+## Required future model extensions
 
-## Audit and chain
-AuditEvent (actor class, tenant/election scope, action, redacted metadata); ChainAnchor (network, chain ID, contract, commitment, transaction, block, confirmations, retry status); KeyMetadata (purpose, custody provider, version, rotation state; never raw private key).
+- **Identity and sessions:** invitations, explicit session revocation/rotation, challenge purpose, delivery status, IP/device abuse counters.
+- **Election configuration:** election type, IANA timezone, frozen configuration versions/hashes, candidate/option ordering, approvals and immutable lifecycle events.
+- **Eligibility:** import batch metadata, voter verification state, source/retention tracking and protected identity references.
+- **Ballot/tally:** protocol-specific encrypted ballot envelope, election-scoped nullifiers, tally runs, verification artifacts and result publication. These must only be designed after selecting and reviewing a cryptographic voting protocol.
+- **Chain audit:** network, chain ID, contract, non-sensitive commitment, transaction, block, confirmations and retry state.
+- **Audit:** actor class, election scope, redaction policy, tamper resistance and retention.
 
 ## Invariants
-Tenant-scoped authorization on every read/write; immutable frozen config except approved amendments; atomic one-nullifier-per-election; no direct voter identifier in ballot storage; one-time OTP consume; append-only redacted audit; non-sensitive chain commitments only; explicit retention per data category.
+
+- Enforce organization membership and role on every tenant/election API read and write.
+- Keep voter identity out of ballot records.
+- Make OTP single-use and expire old challenges.
+- Record administrative mutations in the audit table.
+- Do not put voter identity or ballot selections on a public blockchain.
+- The current Ballot table must not be treated as proof of ballot secrecy, duplicate prevention or verifiable tally.
+
+The current schema is an early administrative foundation and does not establish legal identity, secret-ballot integrity or end-to-end verifiability.
