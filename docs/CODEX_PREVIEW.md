@@ -1,66 +1,43 @@
 # Codex preview setup
 
-Use this guide to open and run the current VotaChain blueprint branch in a Codex coding workspace.
+## Repository
 
-## 1. Open the repository
+Repository: https://github.com/charlesopaleke-afk/Votachain
 
-Open the GitHub repository in Codex:
-https://github.com/charlesopaleke-afk/Votachain
+Working branch: `blueprint/votachain-complete-blueprint`. Do not commit to `main` during blueprint work.
 
-Check out this branch (do not switch to or commit on main):
-`blueprint/votachain-complete-blueprint`
-
-## 2. Install dependencies
+## Install and configure
 
 ```bash
 npm install
-npx prisma generate
+cp .env.example .dev.vars
 ```
 
-## 3. Configure environment
+Set a local PostgreSQL connection string, Resend API key, verified sender, and separate random `JWT_SECRET` and `OTP_SECRET` values (at least 32 characters each). Keep `.dev.vars` private and uncommitted.
 
-Copy `.env.example` to `.env` and configure the values. A PostgreSQL database is required for the authenticated dashboard and voter/candidate APIs.
-
-Required values:
-- `DATABASE_URL`: PostgreSQL connection string
-- `JWT_SECRET`: at least 32 characters of high-entropy random data
-- `OTP_SECRET`: a separate, independent secret of at least 32 characters
-- `RESEND_API_KEY`: Resend API key for OTP email delivery
-- `EMAIL_FROM`: sender identity verified with Resend
-- `APP_URL`: local preview origin, usually `http://localhost:3000`
-
-Never commit real secrets or production database credentials.
-
-For a disposable development database, apply the current Prisma schema with:
+Create the schema in a development database:
 
 ```bash
-npx prisma db push
+psql "$DATABASE_URL" -f schema.sql
 ```
 
-Use reviewed migrations rather than `db push` for production.
-
-## 4. Start the preview
+## Run and verify
 
 ```bash
+npm run check
+npm run build
 npm run dev
 ```
 
-Open:
-- `http://localhost:3000` — landing page
-- `http://localhost:3000/login` — email OTP sign-in
-- `http://localhost:3000/dashboard` — organization/election dashboard
-- `http://localhost:3000/voters` — voter register
+Wrangler prints the local preview URL. The application uses one frontend entry and client-side navigation:
+- `/login` — email OTP sign-in
+- `/dashboard` — organization overview and election management
+- `/voters` — voter register and bulk import
+- `/candidates` — candidate management
+- `/audit` — organization audit events
 
-## 5. Ask Codex to inspect before changing
+Check `/api/health` to confirm database connectivity.
 
-Suggested Codex task:
+## Limitations
 
-> Inspect the current VotaChain branch and get the app running locally. Do not merge into main. Do not invent database records or claim production readiness. Check Prisma generation, TypeScript/Next.js build, and API behavior. Report missing environment configuration clearly. Preserve the existing design and only make changes on blueprint/votachain-complete-blueprint.
-
-## Current preview limitations
-
-- PostgreSQL and Resend configuration are needed for full sign-in and persisted data.
-- Candidate API exists; candidate management UI is not yet implemented.
-- CSV import and voter invitation/OTP eligibility are not implemented.
-- No cryptographic secret-ballot protocol or verifiable tally is implemented. Do not use this build for binding elections.
-- No successful local build or database integration test is claimed by this guide.
+The worker requires a PostgreSQL connection and Resend credentials for full use. The cryptographic ballot protocol, anonymous ballot submission, verifiable tally and Polygon anchoring are not implemented. Do not use this build for a real or binding election.
