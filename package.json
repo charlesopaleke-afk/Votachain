@@ -1,34 +1,26 @@
 {
   "name": "votachain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.20.19",
     "@prisma/client": "^6.5.0",
     "jose": "^6.0.8",
-    "next": "^15.2.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "resend": "^4.1.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20261127.0",
     "@types/node": "^22.13.4",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
-    "eslint": "^9.20.0",
-    "eslint-config-next": "^15.2.0",
-    "prisma": "^6.5.0",
     "typescript": "^5.7.3",
-    "wrangler": "^4.68.0"
+    "vite": "^6.2.0",
+    "wrangler": "^4.68.0",
+    "prisma": "^6.5.0"
   }
 }
