@@ -16,7 +16,9 @@ async function readJson(request) {
 }
 function assertSameOrigin(request) {
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) throw new Error("Cross-origin request rejected.");
+  if (!origin || origin !== new URL(request.url).origin) {
+    throw new Error("A valid same-origin Origin header is required for state-changing requests.");
+  }
 }
 function getDb(env) {
   const connectionString = env.HYPERDRIVE?.connectionString || env.DATABASE_URL;
