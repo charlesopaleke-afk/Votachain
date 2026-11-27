@@ -224,40 +224,56 @@ async function elections(request, sql, session, url) {
       if (!await requireRole(tx, session, existing.organizationId)) return { response: error("Election management permission required.", 403) };
       const hasEdits = ["title", "description", "startsAt", "endsAt"].some(key => body[key] !== undefined);
       if (existing.status === "closed" && hasEdits) return { response: error("Closed elections cannot be edited.", 409) };
-      const changes = [];
       const changedFields = [];
+      let title = existing.title;
+      let description = existing.description;
+      let nextStartsAt = existing.startsAt;
+      let nextEndsAt = existing.endsAt;
+      let status = existing.status;
+
       if (body.title !== undefined) {
         if (typeof body.title !== "string" || body.title.trim().length < 3 || body.title.trim().length > 160) return { response: error("Title must be 3–160 characters.") };
-        changes.push(tx`"title" = ${body.title.trim()}`);
+        title = body.title.trim();
         changedFields.push("title");
       }
       if (body.description !== undefined) {
         if (body.description !== null && (typeof body.description !== "string" || body.description.length > 4000)) return { response: error("Description must be at most 4,000 characters.") };
-        changes.push(tx`"description" = ${body.description?.trim() || null}`);
+        description = body.description?.trim() || null;
         changedFields.push("description");
       }
-      const startsAt = body.startsAt !== undefined ? validDate(body.startsAt) : undefined;
-      const endsAt = body.endsAt !== undefined ? validDate(body.endsAt) : undefined;
-      if (startsAt === false || endsAt === false) return { response: error("Invalid election date.") };
-      if (startsAt !== undefined) { changes.push(tx`"startsAt" = ${startsAt}`); changedFields.push("startsAt"); }
-      if (endsAt !== undefined) { changes.push(tx`"endsAt" = ${endsAt}`); changedFields.push("endsAt"); }
-      const effectiveStart = startsAt === undefined ? existing.startsAt : startsAt;
-      const effectiveEnd = endsAt === undefined ? existing.endsAt : endsAt;
-      if (effectiveStart && effectiveEnd && new Date(effectiveStart) >= new Date(effectiveEnd)) return { response: error("The end must be after the start.") };
+      if (body.startsAt !== undefined) {
+        nextStartsAt = validDate(body.startsAt);
+        if (nextStartsAt === false) return { response: error("Invalid startsAt date.") };
+        changedFields.push("startsAt");
+      }
+      if (body.endsAt !== undefined) {
+        nextEndsAt = validDate(body.endsAt);
+        if (nextEndsAt === false) return { response: error("Invalid endsAt date.") };
+        changedFields.push("endsAt");
+      }
+      if (nextStartsAt && nextEndsAt && new Date(nextStartsAt) >= new Date(nextEndsAt)) return { response: error("The end must be after the start.") };
+
       if (body.status !== undefined) {
         const valid = ["draft", "scheduled", "open", "closed"];
         const allowed = { draft: ["scheduled", "closed"], scheduled: ["draft", "open", "closed"], open: ["closed"], closed: [] };
         if (!valid.includes(body.status)) return { response: error("Status must be draft, scheduled, open or closed.") };
         if (!allowed[existing.status]?.includes(body.status)) return { response: error("That election status transition is not allowed.", 409) };
-        if (body.status === "scheduled" && !effectiveStart) return { response: error("Set a start date before scheduling.") };
-        if (body.status === "open" && effectiveEnd && new Date(effectiveEnd) <= new Date()) return { response: error("The election end date has passed.") };
-        changes.push(tx`"status" = ${body.status}`);
+        if (body.status === "scheduled" && !nextStartsAt) return { response: error("Set a start date before scheduling.") };
+        if (body.status === "open" && nextEndsAt && new Date(nextEndsAt) <= new Date()) return { response: error("The election end date has passed.") };
+        status = body.status;
         changedFields.push("status");
       }
-      if (!changes.length) return { response: error("No editable fields supplied.") };
-      changes.push(tx`"updatedAt" = NOW()`);
-      const updatedRows = await tx`UPDATE "Election" SET ${tx.join(changes, tx`, `)}
-        WHERE "id" = ${electionId} RETURNING *`;
+      if (!changedFields.length) return { response: error("No editable fields supplied.") };
+
+      const updatedRows = await tx`UPDATE "Election"
+        SET "title" = ${title},
+            "description" = ${description},
+            "startsAt" = ${nextStartsAt},
+            "endsAt" = ${nextEndsAt},
+            "status" = ${status},
+            "updatedAt" = NOW()
+        WHERE "id" = ${electionId}
+        RETURNING *`;
       await addAudit(tx, existing.organizationId, "election.updated", { electionId, changedFields, actorUserId: session.userId });
       return { election: updatedRows[0] };
     });
