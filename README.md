@@ -4,17 +4,18 @@
 
 > **Safety status:** This is not a production voting service, is not certified, and is not suitable for binding or high-stakes elections. The cryptographic ballot protocol, end-to-end verifiability, and independent security assessment are not implemented.
 
-## Flat application structure
+## Flat repository structure
 
-Application code and deployable entry points live at the repository root:
+Application code, deployment files, database schema and project documents are at the repository root:
 - `index.html` — single-page application shell.
-- `client.js` — browser route handling and dashboard workflows.
+- `client.js` — browser routes and administration workflows.
 - `styles.css` — application styles.
 - `worker.js` — central Cloudflare Worker API router.
 - `schema.sql` — PostgreSQL schema used by the Worker.
 - `wrangler.jsonc` — Worker and static asset configuration.
+- `*_BLUEPRINT.md`, `*_ARCHITECTURE.md`, and other Markdown files — project documentation.
 
-Documentation remains under `docs/`. There are no nested frontend page or API route directories.
+There are no nested frontend page or API route directories. The only reserved nested path is `.github/workflows/`, used by GitHub Actions to run checks.
 
 ## Implemented API endpoints
 
@@ -83,11 +84,25 @@ npx wrangler secret put EMAIL_FROM
 
 Then run `npm run preview` and `npm run deploy` after database migration and tests. Do not deploy until `/api/health`, authentication, organization creation, election lifecycle, voter/candidate management and bulk import have been tested.
 
+## Project documentation
+
+- [Product blueprint](PRODUCT_BLUEPRINT.md)
+- [Technical architecture](TECHNICAL_ARCHITECTURE.md)
+- [Security and privacy](SECURITY_AND_PRIVACY.md)
+- [Data model](DATA_MODEL.md)
+- [API blueprint](API_BLUEPRINT.md)
+- [Delivery roadmap](DELIVERY_ROADMAP.md)
+- [Implementation status](IMPLEMENTATION_STATUS.md)
+- [Cloudflare deployment](CLOUDFLARE_DEPLOYMENT.md)
+- [Codex preview setup](CODEX_PREVIEW.md)
+- [Architecture decisions](DECISIONS.md)
+- [Smart contract plan](CONTRACTS.md)
+
 ## Security and product limitations
 
 - OTP challenges expire after 10 minutes, enforce a 60-second per-email resend cooldown and allow at most five verification attempts.
 - Authentication uses a seven-day HttpOnly, SameSite=Lax session cookie.
-- Durable IP-based abuse throttling, CSRF tokens, session revocation, stronger election concurrency controls and independent security review remain outstanding.
+- Durable IP-based abuse throttling, CSRF token protection, session revocation, stronger election concurrency controls and independent security review remain outstanding.
 - Polygon anchoring and a cryptographic secret-ballot protocol are not implemented. The Ballot table is not a functioning voting protocol.
 - Do not use this build for a real or binding election.
 
