@@ -1,28 +1,30 @@
 # Technical Architecture
 
-## Proposed stack
-Next.js App Router, React and TypeScript; route handlers initially; PostgreSQL with Prisma; Redis-compatible cache/queue/rate limiter; email provider adapter; Polygon adapter; structured logs, metrics, traces and error reporting.
+## Active implementation
 
-## Logical components
-1. Identity: email verification, OTP challenges, sessions, revocation.
-2. Tenant: organizations, memberships, invitations and role policy.
-3. Election: configuration, lifecycle, ballot definition, schedules and freeze/versioning.
-4. Eligibility: voter import, validation and deduplication.
-5. Ballot gateway: election state, voting authorization, protocol envelope validation and atomic duplicate prevention.
-6. Tally: reviewed protocol implementation, isolated proof generation.
-7. Audit: append-only administrative/lifecycle events with redaction.
-8. Chain adapter: commitment anchoring, transaction status and retry.
-9. Notifications: invitation, OTP and lifecycle messages.
-10. Admin/reporting UI: tenant-scoped management and publication.
+- Static single-page application: root-level `index.html`, `client.js`, `styles.css`.
+- Cloudflare Workers: root-level `worker.js` central API router.
+- PostgreSQL: existing relational data model, defined in root-level `schema.sql`.
+- Database connectivity: Postgres.js through Cloudflare Hyperdrive (or local `DATABASE_URL` during development).
+- Authentication: email OTP delivery through Resend and signed seven-day HttpOnly session cookies using JOSE.
+
+## Implemented API areas
+
+1. Authentication: OTP request/verification and session/logout.
+2. Tenant management: organization list/create and membership roles.
+3. Election administration: list/create/update and lifecycle state checks.
+4. Eligibility: voter add/list/remove and CSV-style bulk email import.
+5. Candidate administration: add/list/remove.
+6. Audit: organization-scoped administrative event listing.
 
 ## Trust boundaries
-Browser/device is untrusted. API enforces access but must not be the sole guarantor of ballot secrecy. Database operators must not trivially correlate identities and choices. Email provider sees recipient addresses. Polygon is public and permanent. Platform admins are privileged insiders and require least privilege, approvals and audited break-glass access.
 
-## Election state machine
-DRAFT → REVIEW → SCHEDULED → OPEN → CLOSED → TALLYING → FINALIZED → ARCHIVED. Server validates transitions and records append-only events. Store timestamps in UTC and retain IANA timezone for display. Amendments after freeze require versioning, approvals and disclosure.
+The browser is untrusted. The Worker enforces authentication and organization membership on protected APIs. Database credentials and signing secrets must be stored as Worker secrets or bindings. Email providers can see recipient addresses. Public-chain records are permanent and must not contain voter identities or ballot choices.
 
-## Deployment topology
-CDN/WAF; stateless app instances; private PostgreSQL with encrypted backups/PITR; isolated queue/cache; workers for email/import/scheduling/chain; secrets manager; separate dev/staging/testnet/production; CI gates for typecheck, lint, tests, migration checks, build and security scans.
+## Important product boundary
 
-## Reliability
-Idempotency for submissions/imports/anchors. Bounded retries and dead-letter queues. Replay-safe election schedules. Clock synchronization, tested restore procedures, monitoring and defined SLOs.
+This is an administrative foundation, not a secure voting protocol. Ballot submission, anonymity, cryptographic proofs, tally verification, chain anchoring and independent security assessment are not implemented.
+
+## Planned hardening
+
+Durable IP and account abuse throttling, CSRF token protection, session revocation/rotation, election concurrency controls, idempotent operations, migration automation, comprehensive tests, monitoring and independent security review remain required before production.
