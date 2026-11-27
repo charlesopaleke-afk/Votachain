@@ -71,3 +71,8 @@ This is an API-connected UI implementation, not a tested deployment. It still re
 - Added `docs/CLOUDFLARE_DEPLOYMENT.md` describing route discovery/build watch-path policy and the OpenNext Workers adapter migration checklist.
 - Next.js nested `app/` directories are necessary route conventions and should not be flattened.
 - Cloudflare adapter configuration and runtime compatibility are not yet verified.
+
+
+## Cloudflare adapter configuration
+- Added starter OpenNext adapter configuration (`open-next.config.ts`), Cloudflare Worker config (`wrangler.jsonc`), and preview/deploy/upload/typegen scripts.
+- Build preview and deployment are not yet verified. Validate Next.js, Prisma/PostgreSQL, OTP email and API runtime compatibility before deployment.
