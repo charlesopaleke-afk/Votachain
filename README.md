@@ -2,48 +2,93 @@
 
 **VotaChain** is a multi-organization election administration platform in early development.
 
-> **Safety status:** Not a production voting service, not certified, and not suitable for binding or high-stakes elections. The cryptographic ballot protocol, end-to-end verifiability and independent security assessment are not implemented.
+> **Safety status:** This is not a production voting service, is not certified, and is not suitable for binding or high-stakes elections. The cryptographic ballot protocol, end-to-end verifiability, and independent security assessment are not implemented.
 
-## Architecture migration
+## Flat application structure
 
-The blueprint is moving from Next.js App Router to a flat Cloudflare Workers architecture:
-- `index.html` — single frontend entry point.
-- `client.js` — lightweight client-side path router.
+Application code and deployable entry points live at the repository root:
+- `index.html` — single-page application shell.
+- `client.js` — browser route handling and dashboard workflows.
 - `styles.css` — application styles.
-- `worker.js` — central Cloudflare request/API dispatcher.
+- `worker.js` — central Cloudflare Worker API router.
+- `schema.sql` — PostgreSQL schema used by the Worker.
 - `wrangler.jsonc` — Worker and static asset configuration.
-- `prisma/schema.prisma` — database schema retained during the API port.
 
-The new root-level frontend shell is an initial migration milestone. Existing Next.js pages and API handlers are retained temporarily as reference/source during the port; they are not yet replaced by the Worker. Do not delete them until their behavior has been migrated and tested.
+Documentation remains under `docs/`. There are no nested frontend page or API route directories.
 
-## Existing capability baseline
-Organization membership, email OTP authentication, election lifecycle management, candidate administration, voter registration, bulk voter import and administrative audit events exist in the legacy Next.js implementation. They are not yet connected to the new flat Worker frontend.
+## Implemented API endpoints
 
-The ballot protocol, cryptographic anonymous voting, end-to-end verifiability and Polygon anchoring are not implemented.
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/health` | Worker and database health |
+| POST | `/api/auth/request-otp` | Send email sign-in code |
+| POST | `/api/auth/verify-otp` | Verify code and create session |
+| GET / DELETE | `/api/auth/session` | Read or clear session |
+| GET / POST | `/api/organizations` | List or create organizations |
+| GET / POST / PATCH | `/api/elections` | List, create and update elections |
+| GET / POST / DELETE | `/api/candidates` | Candidate administration |
+| GET / POST / DELETE | `/api/voters` | Voter register |
+| POST | `/api/voters/import` | Batch import up to 500 voter emails |
+| GET | `/api/audit` | Read organization audit events |
+
+Protected endpoints require a signed HttpOnly session cookie. Organization-scoped writes require an owner, admin or election manager membership.
 
 ## Local development
-Requires Node.js and npm.
+
+Requires Node.js 20 or newer and npm.
 
 ```bash
 npm install
+cp .env.example .dev.vars
+```
+
+Update `.dev.vars` with a local PostgreSQL URL, Resend credentials, and independent JWT/OTP secrets. Do not commit this file.
+
+Create the database tables:
+
+```bash
+psql "$DATABASE_URL" -f schema.sql
+```
+
+Start the Cloudflare Worker and static frontend:
+
+```bash
 npm run dev
 ```
 
-Open the Vite development URL printed in the terminal.
+Open the local URL printed by Wrangler. For frontend-only Vite iteration use `npm run dev:ui`; API calls require the Worker runtime.
 
-Build and preview:
+## Cloudflare deployment
+
+Create a Hyperdrive configuration using your PostgreSQL connection string:
+
 ```bash
-npm run build
-npm run preview
+npx wrangler hyperdrive create VotaChain-DB --connection-string="$DATABASE_URL"
 ```
 
-Deploy only after the Worker API migration, database/runtime compatibility, security review and full route tests are complete:
-```bash
-npm run deploy
+Add the returned ID to `wrangler.jsonc`:
+
+```json
+"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "YOUR_HYPERDRIVE_ID" }]
 ```
 
-## Cloudflare
-The Worker serves the built `dist/` assets. Configure production secrets and database connectivity using Cloudflare-supported bindings. Never commit credentials. Prisma/PostgreSQL connectivity and OTP delivery must be validated for the Workers runtime before production.
+Set Worker secrets:
 
-## Branch
-Working branch: `blueprint/votachain-complete-blueprint`. The `main` branch is intentionally untouched.
+```bash
+npx wrangler secret put JWT_SECRET
+npx wrangler secret put OTP_SECRET
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put EMAIL_FROM
+```
+
+Then run `npm run preview` and `npm run deploy` after database migration and tests. Do not deploy until `/api/health`, authentication, organization creation, election lifecycle, voter/candidate management and bulk import have been tested.
+
+## Security and product limitations
+
+- OTP challenges expire after 10 minutes, enforce a 60-second per-email resend cooldown and allow at most five verification attempts.
+- Authentication uses a seven-day HttpOnly, SameSite=Lax session cookie.
+- Durable IP-based abuse throttling, CSRF tokens, session revocation, stronger election concurrency controls and independent security review remain outstanding.
+- Polygon anchoring and a cryptographic secret-ballot protocol are not implemented. The Ballot table is not a functioning voting protocol.
+- Do not use this build for a real or binding election.
+
+Working branch: `blueprint/votachain-complete-blueprint`. The `main` branch remains untouched.
