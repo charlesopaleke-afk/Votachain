@@ -1,1 +1,0 @@
-import "./globals.css"; import type { Metadata } from "next"; export const metadata: Metadata = { title: "VotaChain", description: "Voting infrastructure with privacy-conscious access and Polygon audit anchoring." }; export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="en"><body>{children}</body></html>; }
