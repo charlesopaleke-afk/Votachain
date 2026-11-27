@@ -225,7 +225,7 @@ async function elections(request, sql, session, url) {
       if (!existing) return { response: error("Election not found.", 404) };
       if (!await requireRole(tx, session, existing.organizationId)) return { response: error("Election management permission required.", 403) };
       const hasEdits = ["title", "description", "startsAt", "endsAt"].some(key => body[key] !== undefined);
-      if (existing.status === "closed" && hasEdits) return { response: error("Closed elections cannot be edited.", 409) };
+      if (["open", "closed"].includes(existing.status) && hasEdits) return { response: error("Election configuration is locked after it opens.", 409) };
       const changedFields = [];
       let title = existing.title;
       let description = existing.description;
@@ -254,7 +254,6 @@ async function elections(request, sql, session, url) {
         changedFields.push("endsAt");
       }
       if (nextStartsAt && nextEndsAt && new Date(nextStartsAt) >= new Date(nextEndsAt)) return { response: error("The end must be after the start.") };
-      if (["scheduled", "open"].includes(status) && !nextStartsAt) return { response: error("Set a start date before scheduling or opening.") };
 
       if (body.status !== undefined) {
         const valid = ["draft", "scheduled", "open", "closed"];
@@ -267,6 +266,9 @@ async function elections(request, sql, session, url) {
         status = body.status;
         changedFields.push("status");
       }
+      if (["scheduled", "open"].includes(status) && !nextStartsAt) return { response: error("Set a start date before scheduling or opening.") };
+      if (status === "open" && nextStartsAt && new Date(nextStartsAt) > new Date()) return { response: error("The election start date has not arrived.") };
+      if (status === "open" && nextEndsAt && new Date(nextEndsAt) <= new Date()) return { response: error("The election end date has passed.") };
       if (!changedFields.length) return { response: error("No editable fields supplied.") };
 
       const updatedRows = await tx`UPDATE "Election"
