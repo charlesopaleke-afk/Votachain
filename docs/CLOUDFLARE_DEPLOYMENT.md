@@ -1,31 +1,49 @@
-# Cloudflare deployment and route discovery
+# Cloudflare deployment
 
-## Architecture decision
-VotaChain uses Next.js App Router. Its routes are represented by nested directories under `app/`; this directory structure is required by Next.js and is not something to flatten. Cloudflare must build the Next.js application through the OpenNext Cloudflare adapter so route handlers, server components and middleware/runtime features are bundled as supported.
+## Configuration added
+VotaChain now includes a starter OpenNext configuration for Cloudflare Workers:
+- `wrangler.jsonc`: Worker entrypoint, compatibility settings, static assets binding, and observability.
+- `open-next.config.ts`: OpenNext adapter configuration.
+- `package.json`: preview, deploy, upload, and type-generation scripts.
+- `.gitignore`: excludes adapter build output, Wrangler files, generated types, and local variables.
 
-## Build inclusion policy
-- Git repository root is the application root; do not set a nested Pages root directory.
-- Include all repository files in build watch paths (Cloudflare default include pattern `*`; no excludes) so changes in nested route folders trigger builds.
-- Do not flatten `app/api/**/route.ts`, page routes or components: Next.js discovers route files by directory convention.
-- Keep route code under `app/` and shared helpers in root `lib/`; all paths must be included by the build.
-- Do not commit build output, `.env`, or secrets.
+## Root and route discovery
+- Keep Git repository root as the app root.
+- Build watch paths should include the whole repository (Cloudflare default `*`); avoid exclusions.
+- Next.js routes are nested under `app/`. **Do not flatten route folders.**
+- Next.js route handlers and pages are discovered by convention.
 
-## Deployment migration checklist (before connecting Cloudflare)
-1. Confirm target runtime: Cloudflare Workers using the OpenNext adapter for Next.js, rather than treating this as a static Pages export.
-2. Install and pin a compatible `@opennextjs/cloudflare` version and Wrangler version after checking Cloudflare's current compatibility guidance.
-3. Add adapter build/deploy scripts and a Wrangler configuration appropriate for the chosen Workers project.
-4. Check Next.js features, Prisma runtime, email provider and PostgreSQL access against Cloudflare runtime compatibility. Database connectivity must be provisioned (for example, a compatible managed Postgres provider and supported connection strategy).
-5. Configure secrets in Cloudflare dashboard or Wrangler secret storage; never in Git.
-6. Build locally using the adapter, inspect generated worker assets and route manifest, test every route, then deploy a preview Worker before production.
-7. Configure repository build watch paths to include all paths (default `*`) and exclude nothing.
+## Commands
+```bash
+npm install
+npm run preview
+```
+The preview command builds via OpenNext and runs a local Workers preview.
 
-## Route inventory (current)
-- `/` landing
-- `/login` OTP login
-- `/dashboard` organization dashboard
-- `/voters` voter administration and batch-import UI
-- `/candidates` candidate administration
-- API handlers: `/api/auth/request-otp`, `/api/auth/verify-otp`, `/api/auth/session`, `/api/organizations`, `/api/elections`, `/api/voters`, `/api/voters/import`, `/api/candidates`
+Deploy only after review:
+```bash
+npm run deploy
+```
+Upload a version without activating it:
+```bash
+npm run upload
+```
+Generate Worker environment typings:
+```bash
+npm run cf-typegen
+```
 
-## Important
-This repository is not yet adapter-configured, built or deployed on Cloudflare. The checklist is a deployment target plan, not a claim that the project already deploys successfully.
+## Secrets
+Configure environment values using Cloudflare secrets/variables or local `.dev.vars` (ignored by git). Never commit secrets. Review all required values in `.env.example` and verify provider-specific access.
+
+## Validation checklist
+- Install dependencies and inspect dependency compatibility.
+- Run the adapter preview build.
+- Confirm Worker output, generated route manifest and assets.
+- Test page routes and API routes individually.
+- Validate Prisma/PostgreSQL connectivity, OTP email delivery, session cookies and API behavior under Workers runtime.
+- Check security controls and limits.
+- Only then deploy a preview Worker and conduct QA.
+
+## Known limitation
+Configuration is committed but **the adapter build and live Cloudflare deployment have not been run or verified**. Prisma/PostgreSQL runtime connectivity, secrets, and email delivery are not yet confirmed. This is not production election software.
