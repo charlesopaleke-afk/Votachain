@@ -1,26 +1,23 @@
 {
   "name": "votachain",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "npm run build && wrangler dev",
+    "dev:ui": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "check": "node --check worker.js && node --check client.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.5.0",
     "jose": "^6.0.8",
-    "resend": "^4.1.0"
+    "postgres": "^3.4.8"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20261127.0",
-    "@types/node": "^22.13.4",
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
-    "wrangler": "^4.68.0",
-    "prisma": "^6.5.0"
+    "wrangler": "^4.68.0"
   }
 }
