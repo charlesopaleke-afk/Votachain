@@ -12,7 +12,7 @@ export async function POST(request:NextRequest){
  const electionId=typeof body.electionId==="string"?body.electionId:"";
  const raw=Array.isArray(body.emails)?body.emails:[];
  if(!electionId||raw.length===0||raw.length>500)return NextResponse.json({error:"Provide an electionId and up to 500 email addresses."},{status:400});
- const emails=[...new Set(raw.map((v:any)=>typeof v==="string"?v.trim().toLowerCase():"").filter((v:string)=>emailPattern.test(v)&&v.length<=254))];
+ const validEntries=raw.map((v:any)=>typeof v==="string"?v.trim().toLowerCase():"").filter((v:string)=>emailPattern.test(v)&&v.length<=254);\n const emails=[...new Set(validEntries)];
  if(!emails.length)return NextResponse.json({error:"No valid email addresses were supplied."},{status:400});
  const election=await prisma.election.findUnique({where:{id:electionId}});
  if(!election)return NextResponse.json({error:"Election not found."},{status:404});
@@ -21,11 +21,11 @@ export async function POST(request:NextRequest){
  const existing=await prisma.voter.findMany({where:{electionId,email:{in:emails}},select:{email:true}});
  const existingSet=new Set(existing.map(v=>v.email));
  const fresh=emails.filter(e=>!existingSet.has(e));
- const invalidCount=raw.length-emails.length;
+ const invalidCount=raw.length-validEntries.length;
  const added=await prisma.$transaction(async tx=>{
   const result=await tx.voter.createMany({data:fresh.map(email=>({electionId,email})),skipDuplicates:true});
   if(result.count)await tx.auditEvent.create({data:{organizationId:election.organizationId,action:"voters.bulk_added",details:{electionId,addedCount:result.count,actorUserId:session.userId}}});
   return result.count;
  });
- return NextResponse.json({submitted:raw.length,validUnique:emails.length,added,duplicates:emails.length-fresh.length,invalid:invalidCount});
+ return NextResponse.json({submitted:raw.length,validUnique:emails.length,added,duplicates:validEntries.length-added,invalid:invalidCount});
 }
